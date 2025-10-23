@@ -25,7 +25,6 @@ import com.mojang.authlib.properties.PropertyMap;
 
 import net.Zrips.CMILib.CMILib;
 import net.Zrips.CMILib.FileHandler.ConfigReader;
-import net.Zrips.CMILib.Logs.CMIDebug;
 import net.Zrips.CMILib.Messages.CMIMessages;
 import net.Zrips.CMILib.Version.Version;
 
@@ -78,10 +77,10 @@ public class SkinManager {
     private static Method getProperties = null;
 
     public boolean setSkin(GameProfile profile, UUID uuid) {
-        
-        if (Version.isCurrentEqualOrHigher(Version.v1_21_R6))
-            return false;
-        
+
+//        if (Version.isCurrentEqualOrHigher(Version.v1_21_R6))
+//            return false;
+
         if (checkCache(profile, uuid))
             return true;
         try {
@@ -121,18 +120,12 @@ public class SkinManager {
                     skinCacheByUUID.put(uuid, cmiSkin);
                     skinCacheByName.put(playerName, cmiSkin);
 
-//                    CMIScheduler.runTaskAsynchronously(() -> {
-//                        if (!saving)
-//                            save(cmiSkin);
-//                    });
-
-                    // Requires fix
                     if (profile != null) {
-
                         PropertyMap properties = getPropertyMap(profile);
-
-                        properties.removeAll("textures");
-                        properties.put("textures", new Property("textures", skin, signature));
+                        if (properties != null) {
+                            properties.removeAll("textures");
+                            properties.put("textures", new Property("textures", skin, signature));
+                        }
                     }
                 } catch (Throwable ex) {
                     ex.printStackTrace();
@@ -178,9 +171,7 @@ public class SkinManager {
             if (getProperties == null) {
                 getProperties = com.mojang.authlib.GameProfile.class.getMethod("getProperties");
             }
-
-            PropertyMap properties = (PropertyMap) getProperties.invoke(profile);
-            return (PropertyMap) getProperties.invoke(properties);
+            return (PropertyMap) getProperties.invoke(profile);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -199,15 +190,14 @@ public class SkinManager {
         if (cache != null && cache.getSkin() != null && cache.getSignature() != null && cache.getLastUpdate() + (SkinUpdateTimer * 60 * 1000L) > System.currentTimeMillis()) {
 
             try {
-                if (getProperties == null) {
-                    getProperties = com.mojang.authlib.GameProfile.class.getMethod("getProperties");
+
+                PropertyMap properties = getPropertyMap(profile);
+
+                if (properties != null) {
+                    properties.removeAll("textures");
+                    properties.put("textures", new Property("textures", cache.getSkin(), cache.getSignature()));
+                    return true;
                 }
-
-                PropertyMap properties = (PropertyMap) getProperties.invoke(profile);
-
-                properties.removeAll("textures");
-                properties.put("textures", new Property("textures", cache.getSkin(), cache.getSignature()));
-                return true;
             } catch (Exception e) {
                 e.printStackTrace();
                 return false;
